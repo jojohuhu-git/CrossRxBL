@@ -5,21 +5,39 @@ and recurring maintenance. Pair this with [`CLAUDE.md`](CLAUDE.md) (architecture
 
 Last updated: 2026-06-02.
 
+> **Update this file (and CLAUDE.md) on every ship.** Bump "Last updated", add a Changelog
+> entry, and revise decisions/deferred items if they changed. A behavior change without a doc
+> update is an incomplete PR.
+
 ## Status: SHIPPED & LIVE
 
 - Live: https://jojohuhu-git.github.io/CrossRxBL/
 - `main` is deployed via GitHub Actions; every push to `main` redeploys.
 - 39 unit tests passing; build clean.
 
+## Changelog (most recent first)
+
+- **2026-06-02 — Table readability overhaul** (PR #4): fixed-layout uniform 38px columns;
+  class labels split into short tokens (Siderophore shortened); two-tone blue shading
+  (`#34679a`/`#bcd6ef`) alternating per class on both axes with color-matched jump buttons;
+  class dividers reimplemented as `getBoundingClientRect`-measured overlay lines (continuous,
+  aligned, not occluded by sticky headers). Caught + fixed an infinite-render-loop crash and a
+  divider misalignment during browser verification.
+- **2026-06-02 — Docs** (PR #3): added CLAUDE.md + HANDOFF.md.
+- **2026-06-02 — CI hardening** (PR #2): bumped GitHub Actions to Node 24-compatible majors.
+- **2026-06-02 — Initial release** (PR #1): full app — Check tab, Full Table tab, fail-loud
+  parser, Pages deploy, admin update guide.
+
 ## What's built (done)
 
 - **Cross-Reactivity Check tab** — multi-allergy select + candidate select → Avoid / Caution /
   Low-risk verdict, per-allergy "Why?" breakdown, and a Safer-Alternatives table grouped by
   class.
-- **View Full Table tab** — interactive 29×29 matrix: class bands by generation, continuous
-  class dividers, hover crosshair, click-to-lock plain-language readout, allergy-row search
-  (sticky-header-aware scroll), jump-to-class column nav, "Check this pair →" cross-tab handoff,
-  keyboard-selectable cells, and saturated red/amber fills.
+- **View Full Table tab** — interactive 29×29 matrix: fixed-layout uniform columns, two-tone
+  blue class shading on both axes (color-matched jump buttons), split class-band labels,
+  overlay class dividers (continuous + aligned), hover crosshair, click-to-lock plain-language
+  readout, allergy-row search (sticky-header-aware scroll), jump-to-class column nav,
+  "Check this pair →" cross-tab handoff, keyboard-selectable cells, and saturated red/amber fills.
 - **Single source of truth** — `public/BLcrossmap.xlsx`, parsed in-browser; nothing hardcoded.
 - **Fail-loud parser** — unknown cell symbols block the load instead of being treated as safe.
 - **Shield favicon** (`public/favicon.svg`); blue palette matched to the reference mockup.
@@ -78,3 +96,11 @@ Last updated: 2026-06-02.
 - Specific manual check that has caught regressions: on the Full Table tab, search `cefaclor` →
   the Cefaclor **row** highlights and is fully visible below the sticky header, and the Cefaclor
   **column** is NOT highlighted.
+- **Always verify the Full Table in a browser, not just `npm run build`.** A bad hook dependency
+  (a per-render array like `classGroups` in a `useLayoutEffect` dep) caused an infinite render
+  loop that blanked the whole app while the build stayed green. If the page is blank, check the
+  browser console for "Maximum update depth exceeded".
+- Class-divider overlay lines must be measured with `getBoundingClientRect` relative to the
+  table (not `offsetLeft` accumulation) or they drift ~1 column and misalign.
+- `git status` before committing: Vite's `.vite/` cache (now gitignored) and `dist/` should
+  never be committed.

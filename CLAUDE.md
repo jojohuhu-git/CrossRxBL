@@ -117,9 +117,20 @@ Two tabs (state in `App.jsx`: `tab`, `allergies[]`, `candidate`, `result`):
 - **Cross-Reactivity Check** — `AllergySelect` (multi) + `CandidateSelect` (single, allergens
   excluded) + Check button → `ResultsPanel` (verdict banner, Why?, Safer Alternatives).
 - **View Full Table** — `TableView`: interactive 29×29 matrix with:
-  - Sticky **class band** (generation headers) + sticky row/column headers
-  - **Continuous class dividers** drawn with inset `box-shadow` (NOT per-cell borders — borders
-    drop out on tinted cells under `border-collapse`)
+  - **Fixed table layout** (`table-layout: fixed` + a `<colgroup>`: row-head col 150px, every
+    drug col 38px). This keeps all 29 columns identical width — without it the class-band labels
+    of small classes stretch their columns. Do not remove the colgroup.
+  - **Class band** (generation headers) split into ≤2 short tokens via `splitClassLabel`
+    ("2nd Gen" / "Ceph"). Wide groups (3+ cols) render horizontally stacked; narrow groups
+    (1–2 cols) render vertically. "Siderophore Ceph" is special-cased to just "Siderophore".
+  - **Two-tone blue shading** alternating per class group on BOTH column and row headers
+    (`--class-a` #34679a dark / `--class-b` #bcd6ef light; text color flips per shade).
+    Jump-to-class buttons are color-matched via `CLASS_SHADE_COLORS`.
+  - **Class dividers = absolutely-positioned overlay lines** (`.matrix-overlay` inside the
+    `position:relative` `.matrix-scroll`), measured in a `useLayoutEffect` via
+    `getBoundingClientRect().left/top - tableRect` (scroll-invariant). NOT per-cell borders or
+    box-shadows — those get occluded by the sticky headers / overwritten by hover state, which
+    caused the long-standing "navy line cut off" bug. See "Table rendering pitfalls" below.
   - **Hover crosshair** (row+col highlight) and **click-to-lock** focus with a plain-language
     readout ("Allergic to X → considering Y: AVOID — …")
   - **Search** scoped to the **allergy row** only; manual scroll subtracts the sticky header
@@ -131,13 +142,25 @@ Two tabs (state in `App.jsx`: `tab`, `allergies[]`, `candidate`, `result`):
   - **Saturated red/amber cell fills** with dark glyphs (matrix only — do not restyle the
     verdict banner, badges, legend, or focus readout)
 
+### Table rendering pitfalls (learned the hard way)
+- **Never put a per-render array in a hook dependency.** The overlay `useLayoutEffect` must
+  depend on `[drugs]`, NOT `classGroups` (which is rebuilt every render) — the latter loops
+  (measure → setState → re-render → measure…), throws "max update depth", and blanks the whole
+  app. `npm run build` passes while the app is broken, so **always verify in the browser**.
+- **Measure overlay positions with `getBoundingClientRect` relative to the table**, not
+  `offsetLeft`/`offsetParent` accumulation — the sticky headers make the accumulation drift
+  (~1 column), misaligning the dividers.
+- The overlay lives inside `.matrix-scroll` and scrolls with content because both share the
+  table's coordinate origin. `cellRect.left - tableRect.left` is scroll-invariant.
+
 ## Design tokens (`index.css :root`)
 
 All components read CSS variables — never inline raw hex in JSX. Key tokens:
 `--navy` (header/footer), `--blue`/`--blue-dk`/`--blue-lt`/`--blue-text` (primary action +
 chips), `--avoid-*` / `--caution-*` / `--safe-*` (status), `--avoid-cell-bg`/`--caution-cell-bg`
-(saturated matrix fills), `--gy1..7` neutrals, `--rad`/`--rads` (radii). Single `VERSION`
-constant in `App.jsx`.
+(saturated matrix fills), `--class-a`/`--class-a-text`/`--class-b`/`--class-b-text` (the two-tone
+class header shading), `--gy1..7` neutrals, `--rad`/`--rads` (radii). Single `VERSION` constant
+in `App.jsx`.
 
 ## Deploy & Pages
 
@@ -172,7 +195,11 @@ parser fails loud by design.
 ```
 git checkout -b <branch>      # never commit straight to main
 # edit, then:
-npm test && npm run build      # verify before pushing
+npm test && npm run build      # verify the math/build
+# verify in a browser too — build passing does NOT mean the app renders
+# (a hook-dependency loop blanked the app while the build stayed green)
+# UPDATE DOCS: reflect what changed in CLAUDE.md + HANDOFF.md (see below)
+git status                     # check for stray generated files (.vite/, dist/, etc.)
 git add -A && git commit -m "…"
 git push -u origin <branch>
 gh pr create --fill
@@ -180,6 +207,13 @@ gh pr merge <#> --squash --delete-branch   # merge -> auto-deploys
 gh run watch <run-id> --exit-status        # confirm green
 curl -s -o /dev/null -w "%{http_code}" https://jojohuhu-git.github.io/CrossRxBL/  # expect 200
 ```
+
+**Docs are part of every ship (required).** Before committing a shippable change, update:
+- **CLAUDE.md** — if architecture, the table internals, invariants, tokens, or the deploy setup
+  changed.
+- **HANDOFF.md** — always bump "Last updated" and add a one-line entry to the changelog of what
+  shipped; update deferred items / decisions if they changed.
+Treat a PR that changes behavior without a doc update as incomplete.
 
 ## Build-from-scratch checklist
 
