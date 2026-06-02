@@ -68,6 +68,7 @@ body {
   background: var(--bg);
   color: var(--gy1);
   min-height: 100vh;
+  padding-top: 58px; /* room for the fixed app header */
 }
 
 /* ── Layout ───────────────────────────────────────────────────── */
@@ -80,8 +81,9 @@ body {
   justify-content: space-between;
   height: 58px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  position: sticky;
-  top: 0;
+  /* fixed (not sticky) so it stays full-width during horizontal page scroll */
+  position: fixed;
+  top: 0; left: 0; right: 0;
   z-index: 100;
 }
 .app-header h1 {
@@ -168,14 +170,18 @@ body {
   font-weight: 700;
   border: 1px solid var(--gy5);
 }
-.ml-sym.avoid { background: var(--avoid-bg); color: var(--avoid-text); border-color: var(--avoid-border); }
-.ml-sym.caution { background: var(--caution-bg); color: var(--caution-text); border-color: var(--caution-border); }
+.ml-sym.avoid { background: var(--avoid-cell-bg); color: var(--avoid-cell-text); border-color: var(--avoid-border); }
+.ml-sym.caution { background: var(--caution-cell-bg); color: var(--caution-cell-text); border-color: var(--caution-border); }
 .ml-sym.safe { background: var(--wh); }
 .ml-sym.self { background: var(--gy6); color: var(--gy2); }
 
+/* Single page scroll: NO inner vertical scroll box. The table sizes to its
+   content (width:max-content) and overflows the page width when needed, so the
+   PAGE scrolls (smooth, one surface) and the sticky headers below pin to the
+   page viewport. Do not re-add overflow/max-height here — it reintroduces the
+   nested-scroll "break" and un-pins the column headers. */
 .matrix-scroll {
-  overflow: auto;
-  max-height: 75vh;
+  width: max-content;
   border: 1px solid var(--gy6);
   border-radius: var(--rads);
   position: relative; /* needed for .matrix-overlay absolute positioning */
@@ -196,7 +202,7 @@ body {
 }
 .matrix-table .corner {
   position: sticky;
-  left: 0; top: 0;
+  left: 0; top: 58px; /* pin below the sticky app header (58px) */
   z-index: 3;
   background: var(--navy);
   color: var(--wh);
@@ -207,7 +213,7 @@ body {
 }
 .matrix-table .col-head {
   position: sticky;
-  top: 0;
+  top: 58px; /* pin the drug-name row below the app header so it stays visible */
   z-index: 2;
   /* background set by class-shade-* on individual cells; fallback: */
   background: var(--navy);
@@ -277,7 +283,9 @@ body {
 }
 
 /* ── Class band row ─────────────────────────────────────────────── */
-.class-band-row th { position: sticky; top: 0; z-index: 3; }
+/* Class band scrolls away with the page; only its corner stays pinned left.
+   (The drug-name row below stays pinned to the top via .col-head.) */
+.class-band-row th { position: sticky; z-index: 3; }
 .class-band-corner {
   left: 0;
   z-index: 4 !important;
@@ -337,8 +345,9 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  /* z-index above regular cells (z:0) but doesn't need to beat sticky headers */
-  z-index: 5;
+  /* Above regular cells (z:0) but BELOW the sticky headers (col-head z:2,
+     corner z:3) so the pinned drug-name row covers the lines behind it. */
+  z-index: 1;
 }
 
 /* Each divider line rendered by JS */
