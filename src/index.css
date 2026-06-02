@@ -5,6 +5,17 @@
   --navy-dk: #0f2a45;
   --navy-lt: #235082;
 
+  /* Class band alternating shades — unified two-tone palette used on both axes */
+  --class-band-a: #1e4976;      /* kept for legacy fallback / corner */
+  --class-band-b: #2d6496;      /* kept for legacy fallback */
+  --class-band-a-lt: #d4dfe9;   /* kept for legacy compat */
+  --class-band-b-lt: #d5e3ef;   /* kept for legacy compat */
+  /* NEW unified palette: A = darker (#34679a, white text); B = lighter (#bcd6ef, dark text) */
+  --class-a: #34679a;
+  --class-a-text: #fff;
+  --class-b: #bcd6ef;
+  --class-b-text: var(--gy1);
+
   /* Primary action blue (buttons, accents) */
   --blue: #2563eb;
   --blue-dk: #1d4ed8;
@@ -167,14 +178,21 @@ body {
   max-height: 75vh;
   border: 1px solid var(--gy6);
   border-radius: var(--rads);
+  position: relative; /* needed for .matrix-overlay absolute positioning */
 }
+
+/* Task 1: Fixed table layout — uniform 38px drug columns */
 .matrix-table {
   border-collapse: collapse;
   font-size: 0.78rem;
+  table-layout: fixed;
 }
+/* The colgroup col widths are set inline in JSX. These rules
+   ensure cells/headers never override the fixed width. */
 .matrix-table th, .matrix-table td {
   border: 1px solid var(--gy6);
   text-align: center;
+  overflow: hidden;
 }
 .matrix-table .corner {
   position: sticky;
@@ -191,6 +209,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 2;
+  /* background set by class-shade-* on individual cells; fallback: */
   background: var(--navy);
   color: var(--wh);
   font-weight: 600;
@@ -209,6 +228,7 @@ body {
   position: sticky;
   left: 0;
   z-index: 1;
+  /* background set by class-shade-* on individual cells; fallback: */
   background: var(--gy7);
   color: var(--gy1);
   font-weight: 600;
@@ -217,8 +237,7 @@ body {
   white-space: nowrap;
 }
 .matrix-table .cell {
-  width: 30px;
-  min-width: 30px;
+  /* width/min-width controlled by colgroup; height fixed */
   height: 28px;
   font-weight: 700;
 }
@@ -232,11 +251,24 @@ body {
 .matrix-table .col-head, .matrix-table .row-head, .matrix-table .cell { cursor: pointer; }
 .matrix-table tr.row-hl .cell.safe { background: #eef4ff; }
 .matrix-table .cell.cross { box-shadow: inset 0 0 0 9px rgba(37,99,235,0.10); }
-.matrix-table .col-head.hl, .matrix-table .row-head.hl { background: var(--blue); }
-.matrix-table .col-head.sel, .matrix-table .row-head.sel { background: var(--blue-dk); outline: 2px solid var(--blue); }
+
+/* Class shade tokens — unified two-tone palette on BOTH axes;
+   hl/sel states MUST override these for interactivity */
+.matrix-table .col-head.class-shade-a,
+.matrix-table .class-band-cell.class-shade-a { background: var(--class-a); color: var(--class-a-text); }
+.matrix-table .col-head.class-shade-b,
+.matrix-table .class-band-cell.class-shade-b { background: var(--class-b); color: var(--class-b-text); }
+.matrix-table .row-head.class-shade-a { background: var(--class-a); color: var(--class-a-text); }
+.matrix-table .row-head.class-shade-b { background: var(--class-b); color: var(--class-b-text); }
+
+/* hl and sel override class shades (specificity tie-break: more specific wins) */
+.matrix-table .col-head.hl { background: var(--blue) !important; color: var(--wh) !important; }
+.matrix-table .row-head.hl { background: var(--blue) !important; color: var(--wh) !important; }
+.matrix-table .col-head.sel { background: var(--blue-dk) !important; color: var(--wh) !important; outline: 2px solid var(--blue); }
+.matrix-table .row-head.sel { background: var(--blue-dk) !important; color: var(--wh) !important; outline: 2px solid var(--blue); }
 .matrix-table .cell.sel { outline: 3px solid var(--blue); outline-offset: -3px; font-weight: 800; }
 
-/* Task 5: keyboard focus outlines for accessibility */
+/* keyboard focus outlines for accessibility */
 .matrix-table .col-head:focus-visible,
 .matrix-table .row-head:focus-visible,
 .matrix-table .cell:focus-visible {
@@ -244,7 +276,7 @@ body {
   outline-offset: -2px;
 }
 
-/* Task 1: Class band row */
+/* ── Class band row ─────────────────────────────────────────────── */
 .class-band-row th { position: sticky; top: 0; z-index: 3; }
 .class-band-corner {
   left: 0;
@@ -252,36 +284,82 @@ body {
   background: var(--navy);
   border: 1px solid var(--navy-lt);
 }
+/* Class band cell — base styles; background overridden by class-shade-* */
 .class-band-cell {
   background: var(--navy-lt);
   color: var(--wh);
-  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 5px 6px;
-  white-space: nowrap;
+  padding: 4px 3px;
   text-align: center;
   border: 1px solid var(--navy);
+  /* No white-space:nowrap — wide cells use horizontal layout, narrow use vertical */
 }
 
-/* Class boundary dividers — use inset box-shadow so lines render above cell fill
-   and stay unbroken on tinted (avoid/caution) cells. Applies to both th and td. */
-.matrix-table .class-first-col {
-  /* 2px navy-lt inset on the left edge; negative spread keeps it flush */
-  box-shadow: inset 2px 0 0 0 var(--navy-lt);
+/* Wide class band label (3+ cols) — horizontal two-line stack */
+.class-band-cell .cb-wide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  font-size: 0.68rem;
+  gap: 1px;
+  white-space: nowrap;
 }
-/* Row divider on first row of each class group */
-.matrix-table tr.class-first-row > th,
-.matrix-table tr.class-first-row > td {
-  box-shadow: inset 0 2px 0 0 var(--navy-lt);
+.class-band-cell .cb-wide .cb-line { display: block; }
+
+/* Narrow class band label (1–2 cols) — vertical rotated text */
+.class-band-cell .cb-narrow {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.63rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  gap: 3px;
 }
-/* When a cell is BOTH first-col AND first-row, apply both shadows */
-.matrix-table tr.class-first-row > .class-first-col {
-  box-shadow: inset 2px 0 0 0 var(--navy-lt), inset 0 2px 0 0 var(--navy-lt);
+/* Two-token narrow: wrap a tiny spacer between them */
+.class-band-cell .cb-narrow .cb-sep { letter-spacing: -0.3em; }
+
+/* ── Task 2: Overlay class dividers (replaces pseudo-elements) ───── */
+/* class-first-col / class-first-row flags kept as data markers but
+   no longer used for ::before/::after pseudo-element lines.
+   Divider lines are rendered as absolutely-positioned <div>s inside
+   .matrix-overlay, which sits in the same scroll container as <table>. */
+
+/* Overlay wrapper — sits in .matrix-scroll alongside <table>, covers it */
+.matrix-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* z-index above regular cells (z:0) but doesn't need to beat sticky headers */
+  z-index: 5;
 }
 
-/* Task 2a: Jump-to-class quick-nav */
+/* Each divider line rendered by JS */
+.class-divider-v,
+.class-divider-h {
+  position: absolute;
+  background: var(--navy-lt);
+  pointer-events: none;
+}
+.class-divider-v {
+  width: 2px;
+  top: 0;
+  /* height set inline */
+}
+.class-divider-h {
+  height: 2px;
+  left: 0;
+  /* width, top set inline */
+}
+
+/* ── Task 2a: Jump-to-class quick-nav ─────────────────────────── */
 .class-jump-nav {
   display: flex;
   flex-wrap: wrap;
@@ -295,17 +373,20 @@ body {
   font-weight: 600;
   margin-right: 2px;
 }
+/* Jump button base — background/color/border all overridden inline by class shade */
 .class-jump-btn {
-  background: var(--gy7);
-  border: 1px solid var(--gy5);
   border-radius: var(--rads);
   padding: 3px 10px;
   font-size: 0.75rem;
-  color: var(--gy2);
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition: filter 0.12s;
+  /* fallbacks (overridden inline): */
+  background: var(--class-a);
+  color: var(--class-a-text);
+  border: 1px solid rgba(0,0,0,0.18);
 }
-.class-jump-btn:hover { background: var(--blue-lt); border-color: var(--blue); color: var(--blue-text); }
+.class-jump-btn:hover { filter: brightness(1.15); }
 
 /* Task 2b: Drug search input */
 .matrix-search-wrap {

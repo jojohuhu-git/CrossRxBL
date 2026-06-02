@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { TIERS } from '../logic/parseTable.js';
 
 const TIER_META = {
@@ -8,9 +8,21 @@ const TIER_META = {
   [TIERS.SAFE]:    { sym: '',  cls: 'safe',    verdict: 'Low risk',  desc: 'Dissimilar R1 side chain — low risk of cross-reactivity.' },
 };
 
+// Fixed column widths (Task 1)
+const ROW_HEAD_WIDTH = 150; // px — the sticky left "allergy" label column
+const DRUG_COL_WIDTH = 38;  // px — every drug column, uniform
+
+// Class band alternating colors — unified two-tone palette
+// A = darker (#34679a, white text), B = lighter (#bcd6ef, dark text)
+const CLASS_SHADES = ['class-shade-a', 'class-shade-b'];
+const CLASS_SHADE_COLORS = [
+  { bg: '#34679a', color: '#fff', border: '1px solid rgba(0,0,0,0.18)' },
+  { bg: '#bcd6ef', color: '#333', border: '1px solid rgba(0,0,0,0.22)' },
+];
+
 /**
  * Compute ordered unique class groups from drugClass + drugs array.
- * Returns [{ className, drugs: string[] }] in spreadsheet order.
+ * Returns [{ className, drugs: string[], shadeIdx: 0|1 }] in spreadsheet order.
  */
 function buildClassGroups(drugs, drugClass) {
   const groups = [];
@@ -18,13 +30,30 @@ function buildClassGroups(drugs, drugClass) {
   for (const d of drugs) {
     const cls = drugClass[d] || '';
     if (cls !== current) {
-      groups.push({ className: cls, drugs: [d] });
+      groups.push({ className: cls, drugs: [d], shadeIdx: groups.length % 2 });
       current = cls;
     } else {
       groups[groups.length - 1].drugs.push(d);
     }
   }
   return groups;
+}
+
+/**
+ * Split a class name into up to two short display tokens for the class-band cell.
+ * "2nd Gen Ceph" → ["2nd Gen", "Ceph"]
+ * "Siderophore Ceph" → ["Siderophore", "Ceph"]
+ * "Penicillin" → ["Penicillin"]
+ */
+function splitClassLabel(name) {
+  // Siderophore Ceph is shown as just "Siderophore" (single token) — its full
+  // name is long as a vertical label. Other " Ceph" classes keep both tokens.
+  if (name === 'Siderophore Ceph') return ['Siderophore'];
+  if (name.endsWith(' Ceph')) {
+    const prefix = name.slice(0, -5); // remove " Ceph"
+    return [prefix, 'Ceph'];
+  }
+  return [name];
 }
 
 /**
@@ -45,8 +74,19 @@ export default function TableView({ tableData, onCheckPair }) {
   const colHeadRefs = useRef({});        // drug -> th ref (column heads, for jump-to-class)
   const rowHeadRefs = useRef({});        // drug -> th ref (row heads, for search scroll)
   const theadRef = useRef(null);         // ref on <thead> for sticky-header height
+  const tableRef = useRef(null);         // ref on <table> for overlay measurement
+  const overlayRef = useRef(null);       // ref on .matrix-overlay div
+  const [dividerLines, setDividerLines] = useState({ v: [], h: [] }); // computed overlay line coords
 
   const classGroups = buildClassGroups(drugs, drugClass);
+
+  // Build a lookup: drug -> { shadeIdx, shade class }
+  const drugShade = {};
+  for (const g of classGroups) {
+    for (const d of g.drugs) {
+      drugShade[d] = CLASS_SHADES[g.shadeIdx];
+    }
+  }
 
   // Search targets the ALLERGY ROW only (left axis)
   const matchDrug = searchQuery.trim()
@@ -69,6 +109,51 @@ export default function TableView({ tableData, onCheckPair }) {
     const targetTop = trEl.offsetTop - theadHeight - MARGIN;
     container.scrollTop = Math.max(0, targetTop);
   }, [matchDrug]);
+
+  // Compute overlay divider line positions by measuring actual element offsets.
+  // Runs after layout (useLayoutEffect) so offsetLeft/offsetTop are accurate.
+  useLayoutEffect(() => {
+    function measure() {
+      const tbl = tableRef.current;
+      if (!tbl) return;
+
+      const tblRect = tbl.getBoundingClientRect();
+      const tblW = tbl.offsetWidth;
+      const tblH = tbl.offsetHeight;
+
+      // Vertical lines: one per class boundary. Use getBoundingClientRect relative
+      // to the table — scroll-invariant and immune to offsetParent quirks (the
+      // sticky headers made offsetLeft accumulation drift by ~1 column).
+      const vLines = [];
+      for (let i = 1; i < classGroups.length; i++) {
+        const thEl = colHeadRefs.current[classGroups[i].drugs[0]];
+        if (!thEl) continue;
+        const x = thEl.getBoundingClientRect().left - tblRect.left;
+        vLines.push({ x, height: tblH });
+      }
+
+      // Horizontal lines: one per class boundary row.
+      const hLines = [];
+      for (let i = 1; i < classGroups.length; i++) {
+        const thEl = rowHeadRefs.current[classGroups[i].drugs[0]];
+        if (!thEl) continue;
+        const trEl = thEl.parentElement; // <tr>
+        const y = trEl.getBoundingClientRect().top - tblRect.top;
+        hLines.push({ y, width: tblW });
+      }
+
+      setDividerLines({ v: vLines, h: hLines });
+    }
+
+    measure();
+    // Re-measure on the next frame so fonts/layout have fully settled.
+    const raf = requestAnimationFrame(measure);
+    window.addEventListener('resize', measure);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', measure); };
+    // Depend on `drugs` only — classGroups is derived from drugs and is rebuilt
+    // every render, so including it would loop (measure → setState → re-render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drugs]);
 
   function metaFor(allergyDrug, candidateDrug) {
     const tier = matrix[allergyDrug]?.[candidateDrug] ?? TIERS.SAFE;
@@ -124,7 +209,7 @@ export default function TableView({ tableData, onCheckPair }) {
     <div className="card">
       <div className="card-title">Cross-Reactivity Table</div>
       <p className="table-intro">
-        Read across from the patient's <strong>allergy</strong> (left column) to the antibiotic
+        Read across from the patient&apos;s <strong>allergy</strong> (left column) to the antibiotic
         you are <strong>considering</strong> (top row). <em>Hover</em> to trace a row and column;{' '}
         <em>click</em> a cell to lock the focus, or click a drug name to highlight its row/column.
       </p>
@@ -136,7 +221,7 @@ export default function TableView({ tableData, onCheckPair }) {
         <span><span className="ml-sym self">—</span> Same drug</span>
       </div>
 
-      {/* Jump-to-class quick-nav */}
+      {/* Jump-to-class quick-nav — Task 4: color-matched buttons */}
       <div className="class-jump-nav" aria-label="Jump to drug class">
         <span className="class-jump-label">Jump to:</span>
         {classGroups.map((g) => (
@@ -144,6 +229,11 @@ export default function TableView({ tableData, onCheckPair }) {
             key={g.className}
             type="button"
             className="class-jump-btn"
+            style={{
+              background: CLASS_SHADE_COLORS[g.shadeIdx].bg,
+              color: CLASS_SHADE_COLORS[g.shadeIdx].color,
+              border: CLASS_SHADE_COLORS[g.shadeIdx].border,
+            }}
             onClick={() => jumpToClass(g.className)}
           >
             {g.className}
@@ -219,7 +309,32 @@ export default function TableView({ tableData, onCheckPair }) {
         ref={scrollRef}
         onMouseLeave={() => setHover({ row: null, col: null })}
       >
-        <table className="matrix-table">
+        {/* Overlay for class-boundary divider lines — sits above cells, scrolls with table */}
+        <div className="matrix-overlay" ref={overlayRef} aria-hidden="true">
+          {dividerLines.v.map((line, i) => (
+            <div
+              key={`v-${i}`}
+              className="class-divider-v"
+              style={{ left: line.x, height: line.height }}
+            />
+          ))}
+          {dividerLines.h.map((line, i) => (
+            <div
+              key={`h-${i}`}
+              className="class-divider-h"
+              style={{ top: line.y, width: line.width }}
+            />
+          ))}
+        </div>
+        <table className="matrix-table" ref={tableRef}>
+          {/* Task 1: colgroup for fixed uniform column widths */}
+          <colgroup>
+            <col style={{ width: ROW_HEAD_WIDTH + 'px' }} />
+            {drugs.map((d) => (
+              <col key={d} style={{ width: DRUG_COL_WIDTH + 'px' }} />
+            ))}
+          </colgroup>
+
           <thead ref={theadRef}>
             {/* Class band row above drug names */}
             <tr className="class-band-row">
@@ -229,15 +344,33 @@ export default function TableView({ tableData, onCheckPair }) {
                 rowSpan={1}
                 aria-hidden="true"
               />
-              {classGroups.map((g) => (
-                <th
-                  key={g.className}
-                  colSpan={g.drugs.length}
-                  className="class-band-cell"
-                >
-                  {g.className}
-                </th>
-              ))}
+              {/* Task 3: class-band cells with split labels + Task 4: shading */}
+              {classGroups.map((g) => {
+                const tokens = splitClassLabel(g.className);
+                const isWide = g.drugs.length >= 3;
+                const shade = CLASS_SHADES[g.shadeIdx];
+                return (
+                  <th
+                    key={g.className}
+                    colSpan={g.drugs.length}
+                    className={`class-band-cell ${shade}`}
+                  >
+                    {isWide ? (
+                      // Wide: horizontal two-line stack, centered
+                      <span className="cb-wide">
+                        {tokens.map((t, i) => (
+                          <span key={i} className="cb-line">{t}</span>
+                        ))}
+                      </span>
+                    ) : (
+                      // Narrow: vertical text (rotated)
+                      <span className="cb-narrow">
+                        {tokens.join(' ')}
+                      </span>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
             <tr>
               <th className="corner">Allergy&nbsp;↓ \ Consider&nbsp;→</th>
@@ -247,6 +380,7 @@ export default function TableView({ tableData, onCheckPair }) {
                   ref={(el) => { colHeadRefs.current[d] = el; }}
                   className={[
                     'col-head',
+                    drugShade[d] || '',
                     activeCol === d ? 'hl' : '',
                     sel.col === d && sel.row === null ? 'sel' : '',
                     firstInClass.has(d) ? 'class-first-col' : '',
@@ -279,9 +413,11 @@ export default function TableView({ tableData, onCheckPair }) {
                     ref={(el) => { rowHeadRefs.current[rowDrug] = el; }}
                     className={[
                       'row-head',
+                      drugShade[rowDrug] || '',
                       activeRow === rowDrug ? 'hl' : '',
                       sel.row === rowDrug && sel.col === null ? 'sel' : '',
-                      firstInClass.has(rowDrug) ? 'class-first-col' : '',
+                      // Note: class-first-col intentionally NOT applied to row-heads
+                      // (it's a column concept only; row boundary is handled by overlay h-lines)
                       isSearchRow ? 'search-match-head' : '',
                     ].filter(Boolean).join(' ')}
                     title={`${rowDrug} (${drugClass[rowDrug]})`}

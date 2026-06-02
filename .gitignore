@@ -5,3 +5,6 @@ dist/
 
 # Local editor/preview tooling
 .claude/
+
+# Vite dependency cache
+.vite/
