@@ -17,6 +17,12 @@ Last updated: 2026-06-02.
 
 ## Changelog (most recent first)
 
+- **2026-06-02 — Single page-scroll + legend colors** (PR #6): removed the table's inner scroll
+  box so the whole page scrolls as one smooth surface; app header is now `fixed` and the
+  drug-name row + allergy column stay pinned (column headers at `top:58px`, allergy column at
+  `left:0`) including during horizontal scroll. Legend swatches updated to the saturated cell
+  colors so they match the table. Divider overlay dropped to `z-index:1` so the pinned header
+  covers it.
 - **2026-06-02 — Table readability overhaul** (PR #4): fixed-layout uniform 38px columns;
   class labels split into short tokens (Siderophore shortened); two-tone blue shading
   (`#34679a`/`#bcd6ef`) alternating per class on both axes with color-matched jump buttons;
@@ -33,11 +39,12 @@ Last updated: 2026-06-02.
 - **Cross-Reactivity Check tab** — multi-allergy select + candidate select → Avoid / Caution /
   Low-risk verdict, per-allergy "Why?" breakdown, and a Safer-Alternatives table grouped by
   class.
-- **View Full Table tab** — interactive 29×29 matrix: fixed-layout uniform columns, two-tone
-  blue class shading on both axes (color-matched jump buttons), split class-band labels,
-  overlay class dividers (continuous + aligned), hover crosshair, click-to-lock plain-language
-  readout, allergy-row search (sticky-header-aware scroll), jump-to-class column nav,
-  "Check this pair →" cross-tab handoff, keyboard-selectable cells, and saturated red/amber fills.
+- **View Full Table tab** — interactive 29×29 matrix: single page-scroll (fixed app header,
+  drug-name row + allergy column pinned), fixed-layout uniform columns, two-tone blue class
+  shading on both axes (color-matched jump buttons), split class-band labels, overlay class
+  dividers (continuous + aligned), hover crosshair, click-to-lock plain-language readout,
+  allergy-row search, jump-to-class column nav, "Check this pair →" cross-tab handoff,
+  keyboard-selectable cells, and saturated red/amber fills (legend swatches match).
 - **Single source of truth** — `public/BLcrossmap.xlsx`, parsed in-browser; nothing hardcoded.
 - **Fail-loud parser** — unknown cell symbols block the load instead of being treated as safe.
 - **Shield favicon** (`public/favicon.svg`); blue palette matched to the reference mockup.

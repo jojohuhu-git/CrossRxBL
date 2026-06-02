@@ -117,6 +117,16 @@ Two tabs (state in `App.jsx`: `tab`, `allergies[]`, `candidate`, `result`):
 - **Cross-Reactivity Check** — `AllergySelect` (multi) + `CandidateSelect` (single, allergens
   excluded) + Check button → `ResultsPanel` (verdict banner, Why?, Safer Alternatives).
 - **View Full Table** — `TableView`: interactive 29×29 matrix with:
+  - **Single page-scroll model.** The table has NO inner scroll box — `.matrix-scroll` is
+    `width: max-content` with `overflow` removed, so the whole **page** scrolls as one surface
+    (no nested-scroll "break"). The app header is `position: fixed` (so it stays full-width
+    during horizontal page scroll); `body` has `padding-top: 58px` to compensate. The drug-name
+    header row (`.col-head`) and the "Allergy/Consider" corner are `position: sticky; top: 58px`
+    (pinned below the fixed header); the allergy column (`.row-head`) is `sticky; left: 0`.
+    **Do NOT re-add `overflow`/`max-height` to `.matrix-scroll`** — an inner scroll container
+    re-introduces the scroll "break" and un-pins the column headers (sticky then sticks to the
+    box, not the page). The `.matrix-overlay` divider layer is `z-index: 1` (below the sticky
+    headers `z:2/3`) so the pinned header covers the lines behind it.
   - **Fixed table layout** (`table-layout: fixed` + a `<colgroup>`: row-head col 150px, every
     drug col 38px). This keeps all 29 columns identical width — without it the class-band labels
     of small classes stretch their columns. Do not remove the colgroup.
