@@ -142,25 +142,29 @@ Current map (verified 2026-06-02):
 
 ## Class color tokens
 
-Nine CSS custom properties in `index.css :root` map drug classes to distinct hue accents used
-in the Safe Alternatives table (colored left border on group header row + colored class label).
-Colors are chosen to avoid confusion with the red/amber status colors:
+Each drug class has TWO CSS custom properties in `index.css :root`: a saturated **accent**
+(`--class-color-*`, used for the full-height left bar + class label) and a pale **row tint**
+(`--class-bg-*`, used to shade every drug row in the group so it's obvious which drugs sit under
+which class). The 9 hues **alternate warm/cool down `CLASS_ORDER`** so adjacent classes never sit
+close in tone (the user's explicit requirement). All are chosen to avoid confusion with the
+red/amber status colors.
 
-| Token | Class | Color |
-|---|---|---|
-| `--class-color-penicillin`  | Penicillin | indigo (#6366f1) |
-| `--class-color-1st`         | 1st Gen Ceph | cyan (#0891b2) |
-| `--class-color-2nd`         | 2nd Gen Ceph | teal (#0d9488) |
-| `--class-color-3rd`         | 3rd Gen Ceph | green (#16a34a) |
-| `--class-color-4th`         | 4th Gen Ceph | olive (#4f7c20) |
-| `--class-color-5th`         | 5th Gen Ceph | violet (#7c3aed) |
-| `--class-color-siderophore` | Siderophore Ceph | amber-700 (#b45309) — distinct from UI amber |
-| `--class-color-carbapenem`  | Carbapenem | sky (#0369a1) |
-| `--class-color-monobactam`  | Monobactam | pink (#be185d) |
+| Accent token | Tint token | Class | Hue |
+|---|---|---|---|
+| `--class-color-penicillin`  | `--class-bg-penicillin`  | Penicillin | indigo (#4f46e5) |
+| `--class-color-1st`         | `--class-bg-1st`         | 1st Gen Ceph | amber (#d97706) |
+| `--class-color-2nd`         | `--class-bg-2nd`         | 2nd Gen Ceph | green (#15803d) |
+| `--class-color-3rd`         | `--class-bg-3rd`         | 3rd Gen Ceph | pink (#db2777) |
+| `--class-color-4th`         | `--class-bg-4th`         | 4th Gen Ceph | cyan (#0891b2) |
+| `--class-color-5th`         | `--class-bg-5th`         | 5th Gen Ceph | violet (#7c3aed) |
+| `--class-color-siderophore` | `--class-bg-siderophore` | Siderophore Ceph | olive/brown (#a16207) |
+| `--class-color-carbapenem`  | `--class-bg-carbapenem`  | Carbapenem | blue (#2563eb) |
+| `--class-color-monobactam`  | `--class-bg-monobactam`  | Monobactam | rose (#e11d48) |
 
-`CLASS_COLOR_TOKEN` in `ResultsPanel.jsx` maps the exact class-name strings from the spreadsheet
-to these CSS variable references. If a class name changes in the data, update both the token name
-and the map entry.
+`CLASS_COLOR_TOKEN` and `CLASS_BG_TOKEN` in `ResultsPanel.jsx` map the exact class-name strings
+from the spreadsheet to these CSS variable references (set per-row as `--alt-class-color` /
+`--alt-class-bg`). If a class name changes in the data, update both maps. When re-tuning hues,
+keep the warm/cool alternation so neighbors stay distinguishable.
 
 ## Verdict logic (`assess.js`)
 

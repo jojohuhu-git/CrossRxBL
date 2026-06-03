@@ -113,6 +113,22 @@ const CLASS_COLOR_TOKEN = {
 };
 
 /**
+ * Pale per-class row-background tints (companion to CLASS_COLOR_TOKEN).
+ * Used to shade every drug row under a class so the grouping is obvious.
+ */
+const CLASS_BG_TOKEN = {
+  'Penicillin':       'var(--class-bg-penicillin)',
+  '1st Gen Ceph':     'var(--class-bg-1st)',
+  '2nd Gen Ceph':     'var(--class-bg-2nd)',
+  '3rd Gen Ceph':     'var(--class-bg-3rd)',
+  '4th Gen Ceph':     'var(--class-bg-4th)',
+  '5th Gen Ceph':     'var(--class-bg-5th)',
+  'Siderophore Ceph': 'var(--class-bg-siderophore)',
+  'Carbapenem':       'var(--class-bg-carbapenem)',
+  'Monobactam':       'var(--class-bg-monobactam)',
+};
+
+/**
  * Route map for the Safe Alternatives table only.
  * Source: user-confirmed list (2026-06-02). Any drug not listed → no tag shown.
  * This is a deliberate code constant (not in the spreadsheet) because route is
@@ -172,13 +188,14 @@ function AlternativesTable({ alternatives }) {
       <tbody>
         {groups.map((group) => {
           const accentColor = CLASS_COLOR_TOKEN[group.className] || 'var(--gy5)';
+          const bgColor = CLASS_BG_TOKEN[group.className] || 'transparent';
           return group.drugs.map((alt, i) => {
             const route = DRUG_ROUTE[alt.drug];
             return (
               <tr
                 key={alt.drug}
                 className={i === 0 ? 'alt-class-group' : ''}
-                style={{ '--alt-class-color': accentColor }}
+                style={{ '--alt-class-color': accentColor, '--alt-class-bg': bgColor }}
               >
                 <td>
                   {alt.drug}

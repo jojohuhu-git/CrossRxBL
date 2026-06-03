@@ -59,18 +59,31 @@
   --rads: 4px;
   --shadow: 0 2px 8px rgba(0,0,0,0.10);
 
-  /* Drug class accent colors — Safe Alternatives table left borders + label tints.
-     9 classes in CLASS_ORDER (assess.js). Colors chosen to be distinct from each
-     other and from the red/amber status colors. */
-  --class-color-penicillin:     #6366f1; /* indigo */
-  --class-color-1st:            #0891b2; /* cyan-700 */
-  --class-color-2nd:            #0d9488; /* teal-600 */
-  --class-color-3rd:            #16a34a; /* green-700 */
-  --class-color-4th:            #4f7c20; /* olive-green */
+  /* Drug class colors — Safe Alternatives table. Each class has a saturated ACCENT
+     (left bar + label) and a pale BG tint (whole-row shading so it's obvious which
+     drugs sit under which class). 9 classes in CLASS_ORDER (assess.js).
+     Hues deliberately ALTERNATE warm/cool down the list so adjacent classes never
+     sit close in tone, and all are distinct from the red/amber status colors. */
+  --class-color-penicillin:     #4f46e5; /* indigo  */
+  --class-color-1st:            #d97706; /* amber-600 */
+  --class-color-2nd:            #15803d; /* green-700 */
+  --class-color-3rd:            #db2777; /* pink-600 */
+  --class-color-4th:            #0891b2; /* cyan-700 */
   --class-color-5th:            #7c3aed; /* violet-600 */
-  --class-color-siderophore:    #b45309; /* amber-700 — distinct from UI amber (#d68910) */
-  --class-color-carbapenem:     #0369a1; /* sky-700 */
-  --class-color-monobactam:     #be185d; /* pink-700 */
+  --class-color-siderophore:    #a16207; /* olive/brown */
+  --class-color-carbapenem:     #2563eb; /* blue-600 */
+  --class-color-monobactam:     #e11d48; /* rose-600 */
+
+  /* Pale row-tint companions (same hue order). Light enough to keep text readable. */
+  --class-bg-penicillin:        #eef0fe;
+  --class-bg-1st:               #fef3e2;
+  --class-bg-2nd:               #e7f6ec;
+  --class-bg-3rd:               #fdeaf3;
+  --class-bg-4th:               #e3f5f9;
+  --class-bg-5th:               #f1eafe;
+  --class-bg-siderophore:       #f7f1e0;
+  --class-bg-carbapenem:        #e6eefe;
+  --class-bg-monobactam:        #fdeaee;
 }
 
 /* ── Reset & base ─────────────────────────────────────────────── */
@@ -808,7 +821,9 @@ body {
   color: var(--gy1);
 }
 .alt-table tr:last-child td { border-bottom: none; }
-.alt-table tr:hover td { background: var(--gy7); }
+/* Whole-row class shading so it's obvious which drugs sit under which class */
+.alt-table tbody td { background: var(--alt-class-bg, transparent); }
+.alt-table tbody tr:hover td { background: var(--gy7); }
 .badge-safe {
   display: inline-block;
   background: var(--safe-bg);
@@ -826,13 +841,10 @@ body {
   padding: 12px 0;
 }
 
-/* Safe Alternatives table — class group accent rows */
-.alt-table tr.alt-class-group td:first-child {
+/* Safe Alternatives table — solid accent bar down the full height of each class
+   group (every row in the group carries it, so the colored bar is continuous) */
+.alt-table tbody td:first-child {
   border-left: 3px solid var(--alt-class-color, var(--gy5));
-}
-.alt-table tr:not(.alt-class-group) td:first-child {
-  border-left: 3px solid var(--alt-class-color, var(--gy5));
-  border-left-color: transparent; /* continuation rows: no visible accent (still reserves space) */
 }
 .alt-class-label {
   font-weight: 600;

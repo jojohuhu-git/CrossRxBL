@@ -20,9 +20,10 @@ Last updated: 2026-06-02 (feat/safe-alternatives-route-colors).
 - **2026-06-02 — Safe Alternatives UX polish** (feat/safe-alternatives-route-colors): allergy
   drop-down closes on each selection; 5 US-unavailable drugs (Cefaclor, Cefamandole,
   Cefoperazone, Ceftibuten, Cefotaxime) excluded from safe-alternatives output (still in
-  drop-downs + Full Table); "Safer" → "Safe Alternatives" throughout; class-color left-border
-  accents (9 distinct hues) in the alternatives table; IV/PO route tags in alternatives table
-  only. 41 tests pass.
+  drop-downs + Full Table); "Safer" → "Safe Alternatives" throughout; class color-coding in the
+  alternatives table — every drug row is shaded with a pale per-class tint plus a full-height
+  accent bar, and the 9 hues alternate warm/cool down the list so adjacent classes never sit
+  close in tone; IV/PO route tags in alternatives table only. 41 tests pass.
 - **2026-06-02 — Single page-scroll + legend colors** (PR #6): removed the table's inner scroll
   box so the whole page scrolls as one smooth surface; app header is now `fixed` and the
   drug-name row + allergy column stay pinned (column headers at `top:58px`, allergy column at
