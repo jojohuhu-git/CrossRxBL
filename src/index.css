@@ -58,6 +58,19 @@
   --rad: 8px;
   --rads: 4px;
   --shadow: 0 2px 8px rgba(0,0,0,0.10);
+
+  /* Drug class accent colors — Safe Alternatives table left borders + label tints.
+     9 classes in CLASS_ORDER (assess.js). Colors chosen to be distinct from each
+     other and from the red/amber status colors. */
+  --class-color-penicillin:     #6366f1; /* indigo */
+  --class-color-1st:            #0891b2; /* cyan-700 */
+  --class-color-2nd:            #0d9488; /* teal-600 */
+  --class-color-3rd:            #16a34a; /* green-700 */
+  --class-color-4th:            #4f7c20; /* olive-green */
+  --class-color-5th:            #7c3aed; /* violet-600 */
+  --class-color-siderophore:    #b45309; /* amber-700 — distinct from UI amber (#d68910) */
+  --class-color-carbapenem:     #0369a1; /* sky-700 */
+  --class-color-monobactam:     #be185d; /* pink-700 */
 }
 
 /* ── Reset & base ─────────────────────────────────────────────── */
@@ -811,6 +824,28 @@ body {
   font-size: 0.86rem;
   color: var(--gy3);
   padding: 12px 0;
+}
+
+/* Safe Alternatives table — class group accent rows */
+.alt-table tr.alt-class-group td:first-child {
+  border-left: 3px solid var(--alt-class-color, var(--gy5));
+}
+.alt-table tr:not(.alt-class-group) td:first-child {
+  border-left: 3px solid var(--alt-class-color, var(--gy5));
+  border-left-color: transparent; /* continuation rows: no visible accent (still reserves space) */
+}
+.alt-class-label {
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--alt-class-color, var(--gy3));
+}
+
+/* Route tag (IV / PO) in Safe Alternatives table only */
+.route-tag {
+  font-size: 0.75rem;
+  color: var(--gy4);
+  margin-left: 5px;
+  font-weight: 400;
 }
 
 /* Error */

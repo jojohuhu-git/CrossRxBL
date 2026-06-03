@@ -2,7 +2,7 @@ import { verdictMeta } from '../logic/assess.js';
 import { TIERS } from '../logic/parseTable.js';
 
 /**
- * ResultsPanel — renders the verdict banner, Why? section, and Safer Alternatives.
+ * ResultsPanel — renders the verdict banner, Why? section, and Safe Alternatives.
  */
 export default function ResultsPanel({ result, candidate }) {
   if (!result) {
@@ -59,9 +59,9 @@ export default function ResultsPanel({ result, candidate }) {
         )}
       </div>
 
-      {/* Safer Alternatives */}
+      {/* Safe Alternatives */}
       <div className="card">
-        <div className="card-title">Safer Alternatives (Low Risk for All Listed Allergies)</div>
+        <div className="card-title">Safe Alternatives (Low Risk for All Listed Allergies)</div>
         {alternatives.length === 0 ? (
           <p className="no-alts">
             No beta-lactams in this table are rated SAFE for all selected allergies.
@@ -96,6 +96,57 @@ function WhySymbol({ tier }) {
   return <div className={`why-symbol ${cls}`} title={tier}>{label}</div>;
 }
 
+/**
+ * Map from drug class name → CSS token name for accent color.
+ * Matches the 9 classes in CLASS_ORDER (assess.js).
+ */
+const CLASS_COLOR_TOKEN = {
+  'Penicillin':       'var(--class-color-penicillin)',
+  '1st Gen Ceph':     'var(--class-color-1st)',
+  '2nd Gen Ceph':     'var(--class-color-2nd)',
+  '3rd Gen Ceph':     'var(--class-color-3rd)',
+  '4th Gen Ceph':     'var(--class-color-4th)',
+  '5th Gen Ceph':     'var(--class-color-5th)',
+  'Siderophore Ceph': 'var(--class-color-siderophore)',
+  'Carbapenem':       'var(--class-color-carbapenem)',
+  'Monobactam':       'var(--class-color-monobactam)',
+};
+
+/**
+ * Route map for the Safe Alternatives table only.
+ * Source: user-confirmed list (2026-06-02). Any drug not listed → no tag shown.
+ * This is a deliberate code constant (not in the spreadsheet) because route is
+ * a clinical convenience label, not cross-reactivity science.
+ */
+const DRUG_ROUTE = {
+  // PO (oral)
+  'Amoxicillin':  'PO',
+  'Cefadroxil':   'PO',
+  'Cephalexin':   'PO',
+  'Cefprozil':    'PO',
+  'Cefuroxime':   'PO',
+  'Cefdinir':     'PO',
+  'Cefixime':     'PO',
+  'Cefpodoxime':  'PO',
+  // IV (intravenous)
+  'Ampicillin':    'IV',
+  'Oxacillin':     'IV',
+  'Penicillin G':  'IV',
+  'Piperacillin':  'IV',
+  'Cefazolin':     'IV',
+  'Cefotetan':     'IV',
+  'Cefoxitin':     'IV',
+  'Ceftazidime':   'IV',
+  'Ceftriaxone':   'IV',
+  'Cefepime':      'IV',
+  'Ceftaroline':   'IV',
+  'Ceftolozane':   'IV',
+  'Cefiderocol':   'IV',
+  'Ertapenem':     'IV',
+  'Meropenem':     'IV',
+  'Aztreonam':     'IV',
+};
+
 function AlternativesTable({ alternatives }) {
   // Group by class
   const groups = [];
@@ -110,7 +161,7 @@ function AlternativesTable({ alternatives }) {
   }
 
   return (
-    <table className="alt-table" aria-label="Safer antibiotic alternatives">
+    <table className="alt-table" aria-label="Safe antibiotic alternatives">
       <thead>
         <tr>
           <th>Antibiotic</th>
@@ -119,19 +170,34 @@ function AlternativesTable({ alternatives }) {
         </tr>
       </thead>
       <tbody>
-        {groups.map((group) =>
-          group.drugs.map((alt, i) => (
-            <tr key={alt.drug} className={i === 0 ? 'alt-class-group' : ''}>
-              <td>{alt.drug}</td>
-              <td style={{ color: 'var(--gy2)', fontSize: '0.82rem' }}>
-                {i === 0 ? group.className : ''}
-              </td>
-              <td>
-                <span className="badge-safe">Low Risk</span>
-              </td>
-            </tr>
-          ))
-        )}
+        {groups.map((group) => {
+          const accentColor = CLASS_COLOR_TOKEN[group.className] || 'var(--gy5)';
+          return group.drugs.map((alt, i) => {
+            const route = DRUG_ROUTE[alt.drug];
+            return (
+              <tr
+                key={alt.drug}
+                className={i === 0 ? 'alt-class-group' : ''}
+                style={{ '--alt-class-color': accentColor }}
+              >
+                <td>
+                  {alt.drug}
+                  {route && <span className="route-tag">({route})</span>}
+                </td>
+                <td>
+                  {i === 0 ? (
+                    <span className="alt-class-label" style={{ color: accentColor }}>
+                      {group.className}
+                    </span>
+                  ) : ''}
+                </td>
+                <td>
+                  <span className="badge-safe">Low Risk</span>
+                </td>
+              </tr>
+            );
+          });
+        })}
       </tbody>
     </table>
   );

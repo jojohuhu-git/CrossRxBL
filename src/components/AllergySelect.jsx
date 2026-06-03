@@ -55,7 +55,8 @@ export default function AllergySelect({ drugs, drugClass, selected, onAdd, onRem
     } else if (e.key === 'Enter' && activeIdx >= 0 && filtered[activeIdx]) {
       onAdd(filtered[activeIdx]);
       setQuery('');
-      setActiveIdx(0);
+      setOpen(false);
+      setActiveIdx(-1);
       e.preventDefault();
     } else if (e.key === 'Escape') {
       setOpen(false);
@@ -66,8 +67,13 @@ export default function AllergySelect({ drugs, drugClass, selected, onAdd, onRem
   function handleSelect(drug) {
     onAdd(drug);
     setQuery('');
+    setOpen(false);
+    setActiveIdx(-1);
+    // Focus the input so the user can click/type to open again, but do NOT
+    // call setOpen(true) here — the input is already focused when the mousedown
+    // fires (browser focuses the target element), so focus() is a no-op and
+    // onFocus won't re-fire, preserving the closed state (same trick CandidateSelect uses).
     inputRef.current?.focus();
-    setActiveIdx(0);
   }
 
   return (

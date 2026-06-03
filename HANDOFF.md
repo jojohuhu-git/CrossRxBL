@@ -3,7 +3,7 @@
 Snapshot of where the project stands, the decisions behind it, what's deliberately deferred,
 and recurring maintenance. Pair this with [`CLAUDE.md`](CLAUDE.md) (architecture / rebuild guide).
 
-Last updated: 2026-06-02.
+Last updated: 2026-06-02 (feat/safe-alternatives-route-colors).
 
 > **Update this file (and CLAUDE.md) on every ship.** Bump "Last updated", add a Changelog
 > entry, and revise decisions/deferred items if they changed. A behavior change without a doc
@@ -17,6 +17,12 @@ Last updated: 2026-06-02.
 
 ## Changelog (most recent first)
 
+- **2026-06-02 — Safe Alternatives UX polish** (feat/safe-alternatives-route-colors): allergy
+  drop-down closes on each selection; 5 US-unavailable drugs (Cefaclor, Cefamandole,
+  Cefoperazone, Ceftibuten, Cefotaxime) excluded from safe-alternatives output (still in
+  drop-downs + Full Table); "Safer" → "Safe Alternatives" throughout; class-color left-border
+  accents (9 distinct hues) in the alternatives table; IV/PO route tags in alternatives table
+  only. 41 tests pass.
 - **2026-06-02 — Single page-scroll + legend colors** (PR #6): removed the table's inner scroll
   box so the whole page scrolls as one smooth surface; app header is now `fixed` and the
   drug-name row + allergy column stay pinned (column headers at `top:58px`, allergy column at
@@ -36,9 +42,9 @@ Last updated: 2026-06-02.
 
 ## What's built (done)
 
-- **Cross-Reactivity Check tab** — multi-allergy select + candidate select → Avoid / Caution /
-  Low-risk verdict, per-allergy "Why?" breakdown, and a Safer-Alternatives table grouped by
-  class.
+- **Cross-Reactivity Check tab** — multi-allergy select (closes on each selection) + candidate
+  select → Avoid / Caution / Low-risk verdict, per-allergy "Why?" breakdown, and a Safe
+  Alternatives table grouped by class (class-color accents, IV/PO route tags).
 - **View Full Table tab** — interactive 29×29 matrix: single page-scroll (fixed app header,
   drug-name row + allergy column pinned), fixed-layout uniform columns, two-tone blue class
   shading on both axes (color-matched jump buttons), split class-band labels, overlay class

@@ -47,14 +47,17 @@ src/
     parseTable.js     Excel parser. Exports TIERS, TIER_SEVERITY, parseSheetData,
                       loadTableFromUrl. Fail-loud on unknown symbols.
     assess.js         Verdict engine. assessCandidate(), buildAlternatives(), verdictMeta().
+                      Also exports EXCLUDED_FROM_ALTERNATIVES (Set of 5 drugs).
   components/
-    AllergySelect.jsx     Multi-select searchable typeahead (allergies)
+    AllergySelect.jsx     Multi-select searchable typeahead (allergies). Closes on each
+                          selection (mirrors CandidateSelect single-select behavior).
     CandidateSelect.jsx   Single-select searchable typeahead (desired antibiotic)
-    ResultsPanel.jsx      Verdict banner + "Why?" breakdown + Safer Alternatives table
+    ResultsPanel.jsx      Verdict banner + "Why?" breakdown + Safe Alternatives table.
+                          AlternativesTable: class-color accents, IV/PO route tags.
     TableView.jsx         Interactive 29x29 matrix (Full Table tab)
   tests/
     parseTable.test.js    Parser tests (incl. unknown-symbol rejection)
-    assess.test.js        Verdict + alternatives tests
+    assess.test.js        Verdict + alternatives tests (incl. exclusion invariants)
 docs/
   UPDATING-THE-TABLE.md   Non-coder admin guide for swapping the table
 .github/workflows/
@@ -99,6 +102,65 @@ SAFE=SELF=0).
 4. **Worst-case across multiple allergies.** A candidate's verdict = the most severe tier across
    all selected allergy rows (`assessCandidate`).
 5. **Candidate-is-an-allergen → AVOID** ("same drug") before any matrix lookup.
+
+## Safe Alternatives (naming)
+
+The user-facing label is **"Safe Alternatives"** (not "Safer Alternatives"). This applies to the
+`ResultsPanel` card title, `aria-label` on the table, and any other user-visible surface. Do not
+revert to "Safer".
+
+## EXCLUDED_FROM_ALTERNATIVES invariant
+
+`assess.js` exports `EXCLUDED_FROM_ALTERNATIVES` — a `Set` of 5 drug names excluded from
+`buildAlternatives()` output because they are not consistently available in the US market:
+
+```
+Cefaclor, Cefamandole, Cefoperazone, Ceftibuten, Cefotaxime
+```
+
+**These drugs remain fully present everywhere else**: allergy drop-down, candidate drop-down,
+Full Table matrix. They are excluded ONLY from the safe-alternatives result. This is a deliberate
+code constant (an intentional exception to the "all data in the spreadsheet" principle) because
+US-availability filtering is not a cross-reactivity science concern.
+
+`assess.test.js` has two invariant tests asserting none of the 5 ever appear in `alternatives`.
+If you add or remove drugs from this list, update both the constant and those tests.
+
+## Route data model
+
+`ResultsPanel.jsx` exports a `DRUG_ROUTE` map (`{ [drugName]: 'IV' | 'PO' }`) used ONLY in the
+Safe Alternatives table to show a small muted `(IV)` or `(PO)` tag after each drug name. This is
+a code constant (another deliberate exception to the spreadsheet-only-data principle) because
+route is a clinical convenience annotation, not cross-reactivity science. Any drug not in the map
+gets no tag. Do NOT add route tags to the drop-downs, Why? breakdown, or Full Table matrix.
+
+Current map (verified 2026-06-02):
+- PO: Amoxicillin, Cefadroxil, Cephalexin, Cefprozil, Cefuroxime, Cefdinir, Cefixime, Cefpodoxime
+- IV: Ampicillin, Oxacillin, Penicillin G, Piperacillin, Cefazolin, Cefotetan, Cefoxitin,
+      Ceftazidime, Ceftriaxone, Cefepime, Ceftaroline, Ceftolozane, Cefiderocol, Ertapenem,
+      Meropenem, Aztreonam
+
+## Class color tokens
+
+Nine CSS custom properties in `index.css :root` map drug classes to distinct hue accents used
+in the Safe Alternatives table (colored left border on group header row + colored class label).
+Colors are chosen to avoid confusion with the red/amber status colors:
+
+| Token | Class | Color |
+|---|---|---|
+| `--class-color-penicillin`  | Penicillin | indigo (#6366f1) |
+| `--class-color-1st`         | 1st Gen Ceph | cyan (#0891b2) |
+| `--class-color-2nd`         | 2nd Gen Ceph | teal (#0d9488) |
+| `--class-color-3rd`         | 3rd Gen Ceph | green (#16a34a) |
+| `--class-color-4th`         | 4th Gen Ceph | olive (#4f7c20) |
+| `--class-color-5th`         | 5th Gen Ceph | violet (#7c3aed) |
+| `--class-color-siderophore` | Siderophore Ceph | amber-700 (#b45309) — distinct from UI amber |
+| `--class-color-carbapenem`  | Carbapenem | sky (#0369a1) |
+| `--class-color-monobactam`  | Monobactam | pink (#be185d) |
+
+`CLASS_COLOR_TOKEN` in `ResultsPanel.jsx` maps the exact class-name strings from the spreadsheet
+to these CSS variable references. If a class name changes in the data, update both the token name
+and the map entry.
 
 ## Verdict logic (`assess.js`)
 

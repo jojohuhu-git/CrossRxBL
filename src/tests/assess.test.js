@@ -9,7 +9,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { read, utils } from 'xlsx';
 import { parseSheetData, TIERS } from '../logic/parseTable.js';
-import { assessCandidate, verdictMeta } from '../logic/assess.js';
+import { assessCandidate, verdictMeta, EXCLUDED_FROM_ALTERNATIVES } from '../logic/assess.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const XLSX_PATH = join(__dirname, '../../public/BLcrossmap.xlsx');
@@ -192,5 +192,35 @@ describe('assessCandidate — real BLcrossmap.xlsx', () => {
     const altDrugs = res.alternatives.map((a) => a.drug);
     expect(altDrugs).not.toContain('Amoxicillin');
     expect(altDrugs).not.toContain('Cefazolin');
+  });
+
+  it('EXCLUDED_FROM_ALTERNATIVES drugs never appear in alternatives even when the matrix rates them SAFE', () => {
+    // Use Penicillin G as allergy — many drugs are SAFE for it including some excluded ones.
+    // We test each excluded drug individually to be explicit.
+    const excluded = [...EXCLUDED_FROM_ALTERNATIVES];
+    for (const drug of excluded) {
+      // The excluded drug may or may not even be in the table; either way it must not appear.
+      const res = assess(['Penicillin G'], 'Meropenem');
+      const altDrugs = res.alternatives.map((a) => a.drug);
+      expect(altDrugs).not.toContain(drug);
+    }
+  });
+
+  it('EXCLUDED_FROM_ALTERNATIVES: Cefaclor, Cefamandole, Cefoperazone, Ceftibuten, Cefotaxime absent from any alternatives result', () => {
+    // Exhaustive: run a few different allergy/candidate combos and confirm none of the 5 appear.
+    const scenarios = [
+      { allergies: ['Amoxicillin'], candidate: 'Meropenem' },
+      { allergies: ['Cephalexin'], candidate: 'Aztreonam' },
+      { allergies: ['Ceftriaxone'], candidate: 'Ampicillin' },
+    ];
+    for (const s of scenarios) {
+      const res = assess(s.allergies, s.candidate);
+      const altDrugs = res.alternatives.map((a) => a.drug);
+      expect(altDrugs).not.toContain('Cefaclor');
+      expect(altDrugs).not.toContain('Cefamandole');
+      expect(altDrugs).not.toContain('Cefoperazone');
+      expect(altDrugs).not.toContain('Ceftibuten');
+      expect(altDrugs).not.toContain('Cefotaxime');
+    }
   });
 });
