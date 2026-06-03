@@ -14,6 +14,26 @@
 
 import { TIERS, TIER_SEVERITY } from './parseTable.js';
 
+/**
+ * Drugs excluded from the Safe Alternatives output because they are not
+ * consistently available in the US market or have been withdrawn.
+ *
+ * Design note: this is a deliberate exception to the "all data in the
+ * spreadsheet" principle — US-availability filtering is a code concern,
+ * not a cross-reactivity science concern.  These drugs remain:
+ *   • selectable as an allergy
+ *   • selectable as a candidate
+ *   • visible in the Full Table matrix
+ * They are ONLY excluded from buildAlternatives() output.
+ */
+export const EXCLUDED_FROM_ALTERNATIVES = new Set([
+  'Cefaclor',
+  'Cefamandole',
+  'Cefoperazone',
+  'Ceftibuten',
+  'Cefotaxime',
+]);
+
 // Human-readable descriptions for each tier in the "Why?" section
 function tierDescription(tier, allergyDrug, candidateDrug) {
   switch (tier) {
@@ -139,6 +159,7 @@ function buildAlternatives({ allergies, drugs, drugClass, matrix }) {
 
   for (const drug of drugs) {
     if (allergySet.has(drug)) continue; // exclude the allergens
+    if (EXCLUDED_FROM_ALTERNATIVES.has(drug)) continue; // US-availability filter
 
     let isSafeForAll = true;
     for (const allergyDrug of allergies) {
