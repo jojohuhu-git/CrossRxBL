@@ -743,7 +743,6 @@ body {
   background: var(--safe-bg);
   border-left-color: var(--safe-border);
 }
-.verdict-icon { font-size: 2rem; flex-shrink: 0; line-height: 1; }
 .verdict-body {}
 .verdict-label {
   font-size: 1.4rem;

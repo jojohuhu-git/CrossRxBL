@@ -23,9 +23,6 @@ export default function ResultsPanel({ result, candidate }) {
     <div className="results-panel">
       {/* Verdict banner */}
       <div className={`verdict-banner ${meta.cssClass}`} role="alert" aria-live="polite">
-        <div className="verdict-icon">
-          {verdict === 'AVOID' || verdict === 'SAME_DRUG' ? '🚫' : verdict === 'CAUTION' ? '⚠️' : '✅'}
-        </div>
         <div className="verdict-body">
           <div className="verdict-label">{meta.label}</div>
           <div className="verdict-summary">{meta.summary}</div>

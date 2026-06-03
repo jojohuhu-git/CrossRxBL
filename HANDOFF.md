@@ -23,7 +23,9 @@ Last updated: 2026-06-02 (feat/safe-alternatives-route-colors).
   drop-downs + Full Table); "Safer" → "Safe Alternatives" throughout; class color-coding in the
   alternatives table — every drug row is shaded with a pale per-class tint plus a full-height
   accent bar, and the 9 hues alternate warm/cool down the list so adjacent classes never sit
-  close in tone; IV/PO route tags in alternatives table only. 41 tests pass.
+  close in tone; IV/PO route tags in alternatives table only. Removed the emoji icon from the
+  verdict banner (🚫/⚠️/✅) — the verdict is already conveyed by per-status background shading,
+  colored left border, and colored label. 41 tests pass.
 - **2026-06-02 — Single page-scroll + legend colors** (PR #6): removed the table's inner scroll
   box so the whole page scrolls as one smooth surface; app header is now `fixed` and the
   drug-name row + allergy column stay pinned (column headers at `top:58px`, allergy column at
