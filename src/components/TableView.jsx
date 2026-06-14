@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { TIERS } from '../logic/parseTable.js';
+import { TIERS, TIER_GLYPH } from '../logic/parseTable.js';
 
+// Glyphs come from the shared TIER_GLYPH map (parseTable.js). The matrix
+// intentionally renders SAFE as an empty cell for density — the only
+// deliberate deviation from the shared map.
 const TIER_META = {
-  [TIERS.AVOID]:   { sym: '✕', cls: 'avoid',   verdict: 'Avoid',    desc: 'Identical R1 side chain — high risk of cross-reactivity.' },
-  [TIERS.CAUTION]: { sym: '△', cls: 'caution', verdict: 'Caution',  desc: 'Similar R1 side chain — use caution.' },
-  [TIERS.SELF]:    { sym: '—', cls: 'self',    verdict: 'Same drug', desc: 'This is the same drug.' },
-  [TIERS.SAFE]:    { sym: '',  cls: 'safe',    verdict: 'Low risk',  desc: 'Dissimilar R1 side chain — low risk of cross-reactivity.' },
+  [TIERS.AVOID]:   { sym: TIER_GLYPH[TIERS.AVOID],   cls: 'avoid',   verdict: 'Avoid',    desc: 'Identical R1 side chain — high risk of cross-reactivity.' },
+  [TIERS.CAUTION]: { sym: TIER_GLYPH[TIERS.CAUTION], cls: 'caution', verdict: 'Caution',  desc: 'Similar R1 side chain — use caution.' },
+  [TIERS.SELF]:    { sym: TIER_GLYPH[TIERS.SELF],    cls: 'self',    verdict: 'Same drug', desc: 'This is the same drug.' },
+  [TIERS.SAFE]:    { sym: '',                        cls: 'safe',    verdict: 'Low risk',  desc: 'Dissimilar R1 side chain — low risk of cross-reactivity.' },
 };
 
 // Fixed column widths (Task 1)

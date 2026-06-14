@@ -12,19 +12,23 @@
  *   alternatives: Array<{ drug, drugClass }>  — SAFE for ALL allergies, sorted by class/drug
  */
 
-import { TIERS, TIER_SEVERITY } from './parseTable.js';
+import { TIERS, TIER_SEVERITY, TIER_GLYPH } from './parseTable.js';
 
 /**
- * Drugs excluded from the Safe Alternatives output because they are not
- * consistently available in the US market or have been withdrawn.
- *
- * Design note: this is a deliberate exception to the "all data in the
- * spreadsheet" principle — US-availability filtering is a code concern,
- * not a cross-reactivity science concern.  These drugs remain:
+ * Drugs excluded from the Safe Alternatives output. These drugs remain:
  *   • selectable as an allergy
  *   • selectable as a candidate
  *   • visible in the Full Table matrix
  * They are ONLY excluded from buildAlternatives() output.
+ *
+ * Reasons by drug:
+ *   Cefotaxime  — (1) not reliably available in the US; (2) ceftriaxone has an
+ *                 identical R1 side chain and is always the preferred choice
+ *                 whenever cefotaxime would be rated safe — listing cefotaxime
+ *                 as an alternative would redirect clinicians away from the
+ *                 correct recommendation.
+ *   Cefaclor, Cefamandole, Cefoperazone, Ceftibuten — not consistently
+ *                 available in the US market.
  */
 export const EXCLUDED_FROM_ALTERNATIVES = new Set([
   'Cefaclor',
@@ -50,12 +54,10 @@ function tierDescription(tier, allergyDrug, candidateDrug) {
   }
 }
 
-const TIER_SYMBOL = {
-  [TIERS.AVOID]: '✕',
-  [TIERS.CAUTION]: '△',
-  [TIERS.SAFE]: '—',
-  [TIERS.SELF]: '=',
-};
+// Shared tier → glyph map (single source of truth in parseTable.js).
+// Previously this defined SAFE as '—' and SELF as '=', which collided with the
+// Full Table (where '—' marks SELF) and ResultsPanel (SAFE as '○').
+const TIER_SYMBOL = TIER_GLYPH;
 
 // Class sort order for the alternatives table
 const CLASS_ORDER = [
@@ -101,7 +103,7 @@ export function assessCandidate({ allergies, candidate, drugs, drugClass, matrix
       driverRows: [{
         allergyDrug: candidate,
         tier: TIERS.SELF,
-        symbol: '=',
+        symbol: TIER_SYMBOL[TIERS.SELF],
         description: `${candidate} is listed as one of the patient's allergies.`,
       }],
       alternatives: buildAlternatives({ allergies, drugs, drugClass, matrix }),
@@ -114,9 +116,22 @@ export function assessCandidate({ allergies, candidate, drugs, drugClass, matrix
 
   for (const allergyDrug of allergies) {
     const row = matrix[allergyDrug];
-    if (!row) continue; // should not happen if drug is valid
-
-    const tier = row[candidate] ?? TIERS.SAFE;
+    // Fail loud (H1): a missing/empty row must never default the verdict to SAFE.
+    // parseSheetData already refuses to load such a table, but guard here too so
+    // no caller can produce a falsely-"low risk" verdict from a degraded matrix.
+    if (!row || Object.keys(row).length === 0) {
+      throw new Error(
+        `No cross-reactivity data for allergy "${allergyDrug}". Refusing to assess rather ` +
+        'than defaulting to "low risk" — reload the cross-reactivity table.'
+      );
+    }
+    const tier = row[candidate];
+    if (tier === undefined) {
+      throw new Error(
+        `Missing cross-reactivity cell for "${allergyDrug}" → "${candidate}". Refusing to ` +
+        'default to "low risk" — reload the cross-reactivity table.'
+      );
+    }
     const sev = TIER_SEVERITY[tier] ?? 0;
     const worstSev = TIER_SEVERITY[worstTier] ?? 0;
 
@@ -164,8 +179,21 @@ function buildAlternatives({ allergies, drugs, drugClass, matrix }) {
     let isSafeForAll = true;
     for (const allergyDrug of allergies) {
       const row = matrix[allergyDrug];
-      if (!row) continue;
-      const tier = row[drug] ?? TIERS.SAFE;
+      // Fail loud (H1): never treat a missing row/cell as SAFE when proposing
+      // alternatives — that could surface a true-AVOID drug as a "safe" option.
+      if (!row || Object.keys(row).length === 0) {
+        throw new Error(
+          `No cross-reactivity data for allergy "${allergyDrug}". Refusing to build ` +
+          'alternatives rather than defaulting to "low risk" — reload the table.'
+        );
+      }
+      const tier = row[drug];
+      if (tier === undefined) {
+        throw new Error(
+          `Missing cross-reactivity cell for "${allergyDrug}" → "${drug}". Refusing to ` +
+          'default to "low risk" — reload the table.'
+        );
+      }
       if (tier === TIERS.AVOID || tier === TIERS.CAUTION || tier === TIERS.SELF) {
         isSafeForAll = false;
         break;

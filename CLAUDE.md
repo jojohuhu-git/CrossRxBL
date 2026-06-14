@@ -29,7 +29,7 @@ Live site: https://jojohuhu-git.github.io/CrossRxBL/
 ```bash
 npm install
 npm run dev      # dev server (http://localhost:5173/CrossRxBL/ — note the /CrossRxBL/ path)
-npm test         # 39 unit tests (parser + verdict logic), node environment
+npm test         # 50 unit tests (parser + verdict logic), node environment
 npm run build    # production build to dist/
 ```
 
@@ -259,7 +259,7 @@ parser fails loud by design.
 
 ## Testing
 
-- `npm test` (Vitest, node env). 39 tests across `parseTable.test.js` + `assess.test.js`.
+- `npm test` (Vitest, node env). 50 tests across `parseTable.test.js` + `assess.test.js`.
 - Parser tests MUST keep covering **unknown-symbol rejection** (the fail-loud invariant) and the
   blank=SAFE case.
 - Verdict tests MUST keep covering worst-case-across-allergies, candidate-is-allergen, and the
