@@ -15,16 +15,20 @@
 import { TIERS, TIER_SEVERITY, TIER_GLYPH } from './parseTable.js';
 
 /**
- * Drugs excluded from the Safe Alternatives output because they are not
- * consistently available in the US market or have been withdrawn.
- *
- * Design note: this is a deliberate exception to the "all data in the
- * spreadsheet" principle — US-availability filtering is a code concern,
- * not a cross-reactivity science concern.  These drugs remain:
+ * Drugs excluded from the Safe Alternatives output. These drugs remain:
  *   • selectable as an allergy
  *   • selectable as a candidate
  *   • visible in the Full Table matrix
  * They are ONLY excluded from buildAlternatives() output.
+ *
+ * Reasons by drug:
+ *   Cefotaxime  — (1) not reliably available in the US; (2) ceftriaxone has an
+ *                 identical R1 side chain and is always the preferred choice
+ *                 whenever cefotaxime would be rated safe — listing cefotaxime
+ *                 as an alternative would redirect clinicians away from the
+ *                 correct recommendation.
+ *   Cefaclor, Cefamandole, Cefoperazone, Ceftibuten — not consistently
+ *                 available in the US market.
  */
 export const EXCLUDED_FROM_ALTERNATIVES = new Set([
   'Cefaclor',
