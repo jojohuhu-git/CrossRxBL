@@ -13,9 +13,22 @@ Last updated: 2026-06-02 (feat/safe-alternatives-route-colors).
 
 - Live: https://jojohuhu-git.github.io/CrossRxBL/
 - `main` is deployed via GitHub Actions; every push to `main` redeploys.
-- 39 unit tests passing; build clean.
+- 50 unit tests passing; build clean.
 
 ## Changelog (most recent first)
+
+- **2026-06-14 — Parser safety hardening** (fix/parser-safety-hardening): acts on the
+  `REVIEW_FINDINGS.md` audit (PR #8). Fixed H1 (a header drug with a missing/blank/mistyped data
+  row no longer silently returns LOW RISK — `parseSheetData` now throws if any header drug lacks a
+  full data row, and `assessCandidate`/`buildAlternatives` throw rather than defaulting to SAFE on a
+  missing row/cell). Fixed M1 (a truncated data row throws instead of coercing dropped trailing
+  cells to SAFE). Fixed M2 (the dead self-comparing glyph branches now accept real variants:
+  `× ✖ ❌` → AVOID, `▲ ⚠` → CAUTION). Fixed M3 (parse-warning banner is now a persistent strip
+  shown on both tabs). Fixed M4 (added a synthetic asymmetric directionality fixture — transpose
+  guard — since the real matrix is symmetric and can't catch it). Cleanup: single shared
+  `TIER_GLYPH` map in `parseTable.js` resolves the `—`/`○`/`=` glyph collision across assess /
+  ResultsPanel / TableView. Tests 41 → 50. Cefotaxime exclusion (P3) deferred for a separate
+  clinical-availability review.
 
 - **2026-06-02 — Safe Alternatives UX polish** (feat/safe-alternatives-route-colors): allergy
   drop-down closes on each selection; 5 US-unavailable drugs (Cefaclor, Cefamandole,

@@ -94,6 +94,45 @@ describe('assessCandidate — synthetic', () => {
     expect(r2.verdict).toBe('CAUTION');
   });
 
+  it('directional (transpose guard): asymmetric pair gives different verdicts each way', () => {
+    // Explicitly asymmetric: X→Y = AVOID, Y→X = SAFE. A transpose bug
+    // (confusing "allergic to X, give Y" with the reverse) would flip these.
+    const asymCtx = {
+      drugs: ['X', 'Y'],
+      drugClass: { X: 'ClassA', Y: 'ClassB' },
+      matrix: {
+        X: { X: TIERS.SELF, Y: TIERS.AVOID },
+        Y: { X: TIERS.SAFE, Y: TIERS.SELF },
+      },
+    };
+    expect(assessCandidate({ ...asymCtx, allergies: ['X'], candidate: 'Y' }).verdict).toBe('AVOID');
+    expect(assessCandidate({ ...asymCtx, allergies: ['Y'], candidate: 'X' }).verdict).toBe('SAFE');
+  });
+
+  it('fail-loud: a missing/empty allergy row throws rather than defaulting to SAFE', () => {
+    const degradedCtx = {
+      drugs: ['Alpha', 'Beta'],
+      drugClass: { Alpha: 'ClassA', Beta: 'ClassA' },
+      // Alpha's row is empty {} — the H1 failure mode (header drug, no data).
+      matrix: { Alpha: {}, Beta: { Alpha: TIERS.SAFE, Beta: TIERS.SELF } },
+    };
+    expect(() =>
+      assessCandidate({ ...degradedCtx, allergies: ['Alpha'], candidate: 'Beta' })
+    ).toThrow(/no cross-reactivity data/i);
+  });
+
+  it('fail-loud: a missing candidate cell throws rather than defaulting to SAFE', () => {
+    const degradedCtx = {
+      drugs: ['Alpha', 'Beta'],
+      drugClass: { Alpha: 'ClassA', Beta: 'ClassA' },
+      // Alpha row exists but is missing the Beta cell.
+      matrix: { Alpha: { Alpha: TIERS.SELF }, Beta: { Alpha: TIERS.SAFE, Beta: TIERS.SELF } },
+    };
+    expect(() =>
+      assessCandidate({ ...degradedCtx, allergies: ['Alpha'], candidate: 'Beta' })
+    ).toThrow(/missing cross-reactivity cell/i);
+  });
+
   it('alternatives exclude all selected allergens', () => {
     const res = assessCandidate({ ...syntheticCtx, allergies: ['Alpha', 'Beta'], candidate: 'Gamma' });
     const altDrugs = res.alternatives.map((a) => a.drug);

@@ -40,15 +40,34 @@ export const TIER_SEVERITY = {
   AVOID: 2,
 };
 
+// Single source of truth for tier → display glyph, shared across every view
+// (assess driver rows, ResultsPanel "why", TableView). Defined with explicit
+// \u escapes so an editor can't silently collapse look-alikes. Note: TableView
+// intentionally renders SAFE as an empty cell for matrix density (documented
+// there); every other surface uses these.
+export const TIER_GLYPH = {
+  AVOID: '✕',   // ✕  multiplication X
+  CAUTION: '△', // △  white up-pointing triangle
+  SELF: '—',    // —  em dash (diagonal / same drug)
+  SAFE: '○',    // ○  white circle
+};
+
 function normalizeSymbol(raw) {
   // A missing or blank cell is the SAFE case (dissimilar R1 side chain).
+  // NOTE: an *absent* cell (row truncated — index past row.length) is handled
+  // by the caller as a fatal structural error, NOT routed here, so a dropped
+  // column can never be coerced to SAFE. An explicit null/'' cell is genuinely
+  // blank and IS the SAFE case.
   if (raw === null || raw === undefined) return TIERS.SAFE;
   const s = String(raw).trim();
-  if (s === '✕' || s === '✕') return TIERS.AVOID;
-  if (s === '△' || s === '△') return TIERS.CAUTION;
-  if (s === '—' || s === '—' || s === '-') return TIERS.SELF;
+  // Avoid: accept the intended visual variants (autocorrect/keyboard substitutes).
+  if (s === '✕' || s === '✖' || s === '×' || s === '❌') return TIERS.AVOID; // ✕ ✖ × ❌
+  // Caution: accept filled triangle and warning sign as variants of △.
+  if (s === '△' || s === '▲' || s === '⚠') return TIERS.CAUTION; // △ ▲ ⚠
+  // Self (diagonal): em dash, en dash, or ASCII hyphen.
+  if (s === '—' || s === '–' || s === '-') return TIERS.SELF; // — – -
   if (s === '') return TIERS.SAFE;
-  return null; // unknown
+  return null; // unknown — caller refuses to load the table (fail loud)
 }
 
 /**
@@ -123,6 +142,7 @@ export function parseSheetData(rows) {
 
   const dataStartIdx = headerRowIdx + 1;
   let rowsProcessed = 0;
+  const seenRows = new Set();
 
   for (let r = dataStartIdx; r < rows.length; r++) {
     const row = rows[r];
@@ -140,6 +160,21 @@ export function parseSheetData(rows) {
 
     for (let c = 0; c < drugs.length; c++) {
       const candidateDrug = drugs[c];
+
+      // Clinical safety (M1): a *truncated* row — one with fewer cells than the
+      // header has drug columns — must NEVER silently read its missing trailing
+      // cells as SAFE. An out-of-range index (c + 1 >= row.length) means the cell
+      // is absent (a dropped column / deleted block), distinct from an explicitly
+      // blank cell ('' or null) which is the legitimate SAFE case. Fail loud.
+      if (c + 1 >= row.length) {
+        throw new Error(
+          `Row "${allergyDrug}" is missing data: it has ${Math.max(0, row.length - 1)} ` +
+          `cell(s) but ${drugs.length} drug columns are expected (missing from column ` +
+          `"${candidateDrug}" onward). A truncated row would silently read as "safe" — ` +
+          'the table was not loaded. Restore the full row in the spreadsheet and re-upload.'
+        );
+      }
+
       const rawCell = row[c + 1]; // offset by 1 for col A
       const tier = normalizeSymbol(rawCell);
 
@@ -156,16 +191,25 @@ export function parseSheetData(rows) {
       matrix[allergyDrug][candidateDrug] = tier;
     }
     rowsProcessed++;
+    seenRows.add(allergyDrug);
   }
 
   if (rowsProcessed === 0) {
     throw new Error('No valid data rows found below the header row.');
   }
 
-  if (rowsProcessed !== drugs.length) {
-    parseWarnings.push(
-      `Matrix has ${rowsProcessed} allergy rows but ${drugs.length} drug columns — ` +
-      'the table may not be square. Results may be incomplete.'
+  // Clinical safety (H1): every drug in the header MUST have a fully populated
+  // data row. A drug present as a column but missing its row (deleted, blank,
+  // cut off by an early blank/LEGEND row, or mistyped so it was skipped above)
+  // leaves matrix[drug] = {} — and assessCandidate would then read every
+  // candidate as SAFE-by-default for a patient with that allergy. Refuse to
+  // load rather than ship a falsely-"safe" table.
+  const missingRows = drugs.filter((d) => !seenRows.has(d));
+  if (missingRows.length > 0) {
+    throw new Error(
+      `These drug(s) appear in the header but have no data row: ${missingRows.join(', ')}. ` +
+      'A missing row would make every candidate read as "low risk" for that allergy — ' +
+      'the table was not loaded. Add the missing row(s) (check for typos in the row label) and re-upload.'
     );
   }
 

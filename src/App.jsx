@@ -151,6 +151,24 @@ export default function App() {
           </div>
         )}
 
+        {/* Persistent parse-warning strip — shown on BOTH tabs so a clinician
+            on the Full Table or a single-pair verdict can't act on a degraded
+            table without seeing the warning. */}
+        {!loading && tableData && tableData.parseWarnings && tableData.parseWarnings.length > 0 && (
+          <div
+            className="parse-warning-strip card"
+            role="alert"
+            style={{ background: '#fff8e1', borderLeft: '4px solid var(--caution-border)', margin: '0 auto 12px', maxWidth: 1100 }}
+          >
+            <div className="card-title" style={{ color: 'var(--caution-text)' }}>
+              Table parse warnings — results may be incomplete
+            </div>
+            {tableData.parseWarnings.map((w, i) => (
+              <p key={i} style={{ fontSize: '0.8rem', color: 'var(--gy2)', marginTop: 4 }}>{w}</p>
+            ))}
+          </div>
+        )}
+
         {!loading && tableData && tab === 'table' && (
           <div className="table-tab-wrap">
             <TableView tableData={tableData} onCheckPair={handleCheckPair} />
@@ -161,15 +179,6 @@ export default function App() {
           <div className="app-body">
             {/* LEFT: Inputs */}
             <div className="input-panel">
-              {tableData.parseWarnings && tableData.parseWarnings.length > 0 && (
-                <div className="card" style={{ marginBottom: 0, background: '#fff8e1', borderLeft: '4px solid var(--caution-border)' }}>
-                  <div className="card-title" style={{ color: 'var(--caution-text)' }}>Table parse warnings</div>
-                  {tableData.parseWarnings.map((w, i) => (
-                    <p key={i} style={{ fontSize: '0.8rem', color: 'var(--gy2)', marginTop: 4 }}>{w}</p>
-                  ))}
-                </div>
-              )}
-
               {/* Allergy input */}
               <div className="card">
 

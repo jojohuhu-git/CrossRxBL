@@ -1,5 +1,5 @@
 import { verdictMeta } from '../logic/assess.js';
-import { TIERS } from '../logic/parseTable.js';
+import { TIERS, TIER_GLYPH } from '../logic/parseTable.js';
 
 /**
  * ResultsPanel — renders the verdict banner, Why? section, and Safe Alternatives.
@@ -85,11 +85,7 @@ function WhySymbol({ tier }) {
     : tier === TIERS.CAUTION ? 'caution'
     : tier === TIERS.SELF ? 'self'
     : 'safe';
-  const label =
-    tier === TIERS.AVOID ? '✕'
-    : tier === TIERS.CAUTION ? '△'
-    : tier === TIERS.SELF ? '='
-    : '○';
+  const label = TIER_GLYPH[tier] ?? '○';
   return <div className={`why-symbol ${cls}`} title={tier}>{label}</div>;
 }
 
